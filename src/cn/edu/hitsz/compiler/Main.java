@@ -18,6 +18,7 @@ import java.util.Objects;
 
 public class Main {
     public static void main(String[] args) {
+        System.out.println("hi");
         // 构建符号表以供各部分使用
         TokenKind.loadTokenKinds();
         final var symbolTable = new SymbolTable();
@@ -40,14 +41,21 @@ public class Main {
         // final var lrTable = tableGenerator.getTable();
         // lrTable.dumpTable("data/out/lrTable.csv");
 
+
+
         // 加载 LR 分析驱动程序
         final var parser = new SyntaxAnalyzer(symbolTable);
+
         parser.loadTokens(tokens);
+
         parser.loadLRTable(lrTable);
+
 
         // 加入生成规约列表的 Observer
         final var productionCollector = new ProductionCollector(GrammarInfo.getBeginProduction());
+
         parser.registerObserver(productionCollector);
+
 
         // 加入用作语义检查的 Observer
         final var semanticAnalyzer = new SemanticAnalyzer();
@@ -57,8 +65,10 @@ public class Main {
         final var irGenerator = new IRGenerator();
         parser.registerObserver(irGenerator);
 
+
         // 执行语法解析并在解析过程中依次调用各 Observer
         parser.run();
+
 
         // 各 Observer 输出结果
         productionCollector.dumpToFile(FilePathConfig.PARSER_PATH);
