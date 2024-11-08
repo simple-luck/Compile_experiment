@@ -1,14 +1,19 @@
 package cn.edu.hitsz.compiler.parser;
 
 import cn.edu.hitsz.compiler.NotImplementedException;
+import cn.edu.hitsz.compiler.ir.IRImmediate;
+import cn.edu.hitsz.compiler.ir.IRVariable;
 import cn.edu.hitsz.compiler.ir.Instruction;
 import cn.edu.hitsz.compiler.lexer.Token;
 import cn.edu.hitsz.compiler.parser.table.Production;
 import cn.edu.hitsz.compiler.parser.table.Status;
+import cn.edu.hitsz.compiler.parser.table.Symbol;
 import cn.edu.hitsz.compiler.symtab.SymbolTable;
 import cn.edu.hitsz.compiler.utils.FileUtils;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 
 // TODO: 实验三: 实现 IR 生成
 
@@ -17,16 +22,100 @@ import java.util.List;
  */
 public class IRGenerator implements ActionObserver {
 
+    public  SymbolTable table;
+    private final Stack<Symbol>  tokenStack =new Stack<>();
+    private List<Instruction> IRList = new ArrayList<>();
     @Override
     public void whenShift(Status currentStatus, Token currentToken) {
         // TODO
-        //throw new NotImplementedException();
+        String num="^[0-9]+$";
+        Symbol curSymbol = new Symbol(currentToken);
+        if(currentToken.getText().matches(num)){
+            curSymbol.value= IRImmediate.of(Integer.parseInt(currentToken.getText()));
+        }else{
+            curSymbol.value= IRVariable.named(currentToken.getText());
+        }
+        tokenStack.push(curSymbol);
     }
 
     @Override
     public void whenReduce(Status currentStatus, Production production) {
         // TODO
         //throw new NotImplementedException();
+        Symbol lhs,rhs;
+        Symbol curNonTerminal = new Symbol(production.head());
+        IRVariable valueTemp;
+        switch (production.index()) {
+            case 6 -> {//S->id=E
+                rhs = tokenStack.pop();
+                tokenStack.pop();
+                lhs = tokenStack.pop();
+                valueTemp = (IRVariable) lhs.value;
+                curNonTerminal.value = null;
+                IRList.add(Instruction.createMov(valueTemp, rhs.value));
+                tokenStack.push(curNonTerminal);
+            }
+            case 7 -> {//S->return E;
+                rhs = tokenStack.pop();
+                tokenStack.pop();
+                curNonTerminal.value = null;
+                IRList.add(Instruction.createRet(rhs.value));
+                tokenStack.push(curNonTerminal);
+            }
+            case 8 -> {
+                rhs = tokenStack.pop();
+                tokenStack.pop();
+                lhs = tokenStack.pop();
+                valueTemp = IRVariable.temp();
+                IRList.add(Instruction.createAdd(valueTemp, lhs.value, rhs.value));
+                curNonTerminal.value = valueTemp;
+                tokenStack.push(curNonTerminal);
+            }
+            case 9 -> {//E->A;
+                rhs = tokenStack.pop();
+                tokenStack.pop();
+                lhs = tokenStack.pop();
+                valueTemp = IRVariable.temp();
+                IRList.add(Instruction.createSub(valueTemp, lhs.value, rhs.value));
+                curNonTerminal.value = valueTemp;
+                tokenStack.push(curNonTerminal);
+            }
+            case 10->{//E->A
+            }
+            case 12 -> {//A->B;
+            }
+            case 14->{//B->id;
+                curNonTerminal.value=tokenStack.pop().value;
+                tokenStack.push(curNonTerminal);
+            }
+            case 11->{//A->A*B
+                rhs=tokenStack.pop();
+                tokenStack.pop();
+                lhs=tokenStack.pop();
+                valueTemp=IRVariable.temp();
+                IRList.add(Instruction.createMul(valueTemp, lhs.value,rhs.value));
+                curNonTerminal.value=valueTemp;
+                tokenStack.push(curNonTerminal);
+            }
+            case 13->{//B->(E);
+                tokenStack.pop();
+                rhs=tokenStack.pop();
+                tokenStack.pop();
+                curNonTerminal.value= rhs.value;
+                tokenStack.push(curNonTerminal);
+            }
+            case 15->{
+                rhs=tokenStack.pop();
+                curNonTerminal.value=rhs.value;
+                tokenStack.push(curNonTerminal);
+            }
+            default -> {
+                for(int i=0;i<production.body().size();i++){
+                    tokenStack.pop();
+                }
+                tokenStack.push(new Symbol(production.head()));
+            }
+        }
     }
 
 
@@ -40,11 +129,13 @@ public class IRGenerator implements ActionObserver {
     public void setSymbolTable(SymbolTable table) {
         // TODO
         //throw new NotImplementedException();
+        this.table=table;
     }
 
     public List<Instruction> getIR() {
         // TODO
-        throw new NotImplementedException();
+        //throw new NotImplementedException();
+        return IRList;
     }
 
     public void dumpIR(String path) {

@@ -48,6 +48,7 @@ public class SyntaxAnalyzer {
         for (final var listener : observers) {
             listener.whenShift(currentStatus, currentToken);
         }
+
     }
 
     /**

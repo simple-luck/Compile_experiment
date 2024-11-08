@@ -18,7 +18,7 @@ import java.util.Objects;
 
 public class Main {
     public static void main(String[] args) {
-        System.out.println("hi");
+        //System.out.println("hi");
         // 构建符号表以供各部分使用
         TokenKind.loadTokenKinds();
         final var symbolTable = new SymbolTable();
@@ -40,7 +40,6 @@ public class Main {
         // tableGenerator.run();
         // final var lrTable = tableGenerator.getTable();
         // lrTable.dumpTable("data/out/lrTable.csv");
-
 
 
         // 加载 LR 分析驱动程序
